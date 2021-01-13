@@ -3,7 +3,8 @@ data/*
 *.pth
 *.o
 *.so
-*.mp4
+video_data/*.mp4
+action_csv/*.csv
 .ipynb_checkpoints
 notebooks/*.pkl
 
