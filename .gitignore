@@ -3,7 +3,7 @@ data/*
 *.pth
 *.o
 *.so
-
+*.mp4
 .ipynb_checkpoints
 notebooks/*.pkl
 
