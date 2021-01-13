@@ -123,17 +123,18 @@ def crop_with_factor(im, dest_size=None, factor=32, is_ceil=True):
     # im_scale = 1.
     # if max_size is not None and im_size_min > max_size:
     im_scale = float(dest_size) / im_size_min
-    b, h, w, c = im.shape
+    new_img = None
+    for i in range(im_shape[0]):
+        new_img_tmp = cv2.resize(im[i], None, fx=im_scale, fy=im_scale)
+        if i ==0:
+            h, w, c = new_img_tmp.shape
+            new_img = np.zeros([im_shape[0], h, w, c], dtype=im.dtype)
+        new_img[i] = new_img_tmp
+
+    b, h, w, c = new_img.shape
     new_h = _factor_closest(h, factor=factor, is_ceil=is_ceil)
     new_w = _factor_closest(w, factor=factor, is_ceil=is_ceil)
-
-    new_im = np.zeros([im_shape[0],491,368, 3], dtype=im.dtype)
-    for i in range(im_shape[0]):
-        new_im[i] = cv2.resize(im[i], None, fx=im_scale, fy=im_scale)
-
-    
-    im_croped = np.zeros([b, new_h, new_w, c], dtype=im.dtype)
-    im_croped[:, 0:h, 0:w, :] = im
+    im_croped = np.zeros([b, new_h, new_w, c], dtype=new_img.dtype)
+    im_croped[:, 0:h, 0:w, :] = new_img
 
     return im_croped, im_scale, im.shape
-    

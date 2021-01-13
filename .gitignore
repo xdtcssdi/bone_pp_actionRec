@@ -7,7 +7,7 @@ video_data/*.mp4
 action_csv/*.csv
 .ipynb_checkpoints
 notebooks/*.pkl
-
+.vscode
 /outputs
 network/weight
 

@@ -50,16 +50,15 @@ model.eval()
 
 test_image = './readme/ski.jpg'
 oriImg = cv2.imread(test_image) # B,G,R order
-shape_dst = np.min(oriImg.shape[0:2])
-
+oriImg = oriImg[np.newaxis, :]
 # Get results of original image
 
 with torch.no_grad():
     paf, heatmap, im_scale = get_outputs(oriImg, model,  'rtpose')
           
 print(im_scale)
-humans = paf_to_pose_cpp(heatmap, paf, cfg)
+humans = paf_to_pose_cpp(heatmap[0], paf[0], cfg)
         
-out = draw_humans(oriImg, humans)
+out = draw_humans(oriImg[0], humans)
 cv2.imwrite('result.png',out)   
 

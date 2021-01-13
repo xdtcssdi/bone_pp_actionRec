@@ -54,20 +54,17 @@ if __name__ == "__main__":
     while True:
         # Capture frame-by-frame
         ret, oriImg = video_capture.read()
-        
-        shape_dst = np.min(oriImg.shape[0:2])
-
+        oriImg = oriImg[np.newaxis, :]
         with torch.no_grad():
             paf, heatmap, imscale = get_outputs(
                 oriImg, model, 'rtpose')
         #print(heatmap)
         #print(paf)
-        humans = paf_to_pose_cpp(heatmap, paf, cfg)
+        humans = paf_to_pose_cpp(heatmap[0], paf[0], cfg)
         if len(humans) !=0:
             
-            with open('data.csv', 'a') as f:
+            with open(os.path.join('action_csv' ,'data.csv'), 'a') as f:
                 writer = csv.writer(f)
-                
                 data = []
                 for i in range(19):
                     if i in humans[0].body_parts:
@@ -78,7 +75,7 @@ if __name__ == "__main__":
 
                 writer.writerow(data)
             
-        out = draw_humans(oriImg, humans)
+        out = draw_humans(oriImg[0], humans)
 
         # Display the resulting frame
         cv2.imshow('Video', out)

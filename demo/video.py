@@ -35,7 +35,6 @@ parser.add_argument('--cfg', help='experiment configure file name',
 parser.add_argument('--weight', type=str,
                     default='pose_model.pth')
 
-
 parser.add_argument('opts',
                     help="Modify config options using the command-line",
                     default=None,
@@ -53,22 +52,20 @@ model.eval()
 
 if __name__ == "__main__":
     
-    cap = cv2.VideoCapture(os.path.join(os.getcwd(), "video_data/01A.mp4"))
+    cap = cv2.VideoCapture(os.path.join(os.getcwd(), "video_data", "01A.mp4"))
     
     while cap.isOpened():
         # Capture frame-by-frame
         ret, oriImg = cap.read()
-        
-        shape_dst = np.min(oriImg.shape[0:2])
-
+        oriImg = oriImg[np.newaxis, :]
         with torch.no_grad():
             paf, heatmap, imscale = get_outputs(
                 oriImg, model, 'rtpose')
-         
-        humans = paf_to_pose_cpp(heatmap, paf, cfg)
+        
+        humans = paf_to_pose_cpp(heatmap[0], paf[0], cfg)
         if len(humans) !=0:
             
-            with open('01A001' + '.csv', 'a') as f:
+            with open(os.path.join('action_csv' ,'01A001' + '.csv'), 'a') as f:
                 writer = csv.writer(f)
                 
                 data = []
@@ -80,7 +77,7 @@ if __name__ == "__main__":
                         data.extend([-1, -1, -1])
 
                 writer.writerow(data)
-        out = draw_humans(oriImg, humans)
+        out = draw_humans(oriImg[0], humans)
 
         # Display the resulting frame
         cv2.imshow('Video', out)
