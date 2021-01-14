@@ -66,12 +66,12 @@ if __name__ == "__main__":
             with open(os.path.join('action_csv' ,'data.csv'), 'a') as f:
                 writer = csv.writer(f)
                 data = []
-                for i in range(19):
+                for i in range(18):
                     if i in humans[0].body_parts:
                         item = humans[0].body_parts[i]
-                        data.extend([item.x, item.y, item.score])
+                        data.extend([item.x, item.y])
                     else:
-                        data.extend([-1, -1, -1])
+                        data.extend([-1, -1])
 
                 writer.writerow(data)
             

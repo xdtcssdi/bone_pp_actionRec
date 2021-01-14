@@ -31,8 +31,6 @@ parser.add_argument('--cfg', help='experiment configure file name',
                     default='./experiments/vgg19_368x368_sgd.yaml', type=str)
 parser.add_argument('--weight', type=str,
                     default='pose_model.pth')
-parser.add_argument('--count', type=int,
-                    default=10)
 parser.add_argument('opts',
                     help="Modify config options using the command-line",
                     default=None,
@@ -90,7 +88,7 @@ if __name__ == "__main__":
                         humans = paf_to_pose_cpp(heatmap[i], paf[i], cfg)
 
                         # write to csv
-                        with open("./action_csv/" + outname + '.csv', 'a') as f:
+                        with open("./action_csv/" + outname + '.csv', 'a', newline='' ,encoding='utf-8') as f:
                             writer = csv.writer(f)
                             
                             data = []
