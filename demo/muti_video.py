@@ -45,7 +45,10 @@ model.load_state_dict(torch.load(args.weight))
 model.cuda()
 model.float()
 model.eval()
+count = 0
 
+writer = csv.writer(open("./action_csv/" + outname + '.csv', 'a', newline='' ,encoding='utf-8'))
+writer.writerow(['', ].extend([i for i in range(36)]))
 if __name__ == "__main__":
     filepaths = os.path.join(os.getcwd(), "video_data", "*.mp4");
     for filepath in glob(filepaths):
@@ -88,9 +91,6 @@ if __name__ == "__main__":
                         humans = paf_to_pose_cpp(heatmap[i], paf[i], cfg)
 
                         # write to csv
-                        with open("./action_csv/" + outname + '.csv', 'a', newline='' ,encoding='utf-8') as f:
-                            writer = csv.writer(f)
-                            
                             data = []
                             for i in range(18):
                                 if i in humans[0].body_parts:
@@ -99,13 +99,14 @@ if __name__ == "__main__":
                                 else:
                                     data.extend([-1, -1])
 
-                            writer.writerow(data)
+                            writer.writerow([count, ].extend(data))
 
                         # if type(oriImg) != numpy.ndarray:
                         #     break
                         #out = draw_humans(batch_imgs[i], humans)
                 # update progress
                 pbar.update(1)
-        
+    
         # When everything is done, release the capture
         video_capture.release()
+

@@ -19,6 +19,7 @@ _C.PRINT_FREQ = 20
 _C.PIN_MEMORY = True
 _C.RANK = 0
 _C.BATCH_SIZE = 5
+_C.FILE = None
 # Cudnn related params
 _C.CUDNN = CN()
 _C.CUDNN.BENCHMARK = True

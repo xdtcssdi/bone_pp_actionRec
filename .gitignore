@@ -10,7 +10,7 @@ notebooks/*.pkl
 .vscode
 /outputs
 network/weight
-
+action_video/*
 # ------------------------------
 
 # General

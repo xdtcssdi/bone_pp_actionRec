@@ -10,9 +10,10 @@ parser.add_argument('--out', type=str, help='no padding csv path')
 args = parser.parse_args()
 in_path = args.in_
 b, a = signal.butter(8, 0.8, 'lowpass')
-df = pd.read_csv(in_path, names=list(range(36)))
+df = pd.read_csv(in_path)
+
 for idx in range(36):
-    col = df[idx].to_list()
+    col = df[str(idx)].to_list()
     indice = [i for i, x in enumerate(col) if x==-1]
     indices = []
     start = 0
@@ -38,13 +39,9 @@ for idx in range(36):
         pad_value = np.linspace(last_value,next_value,len(indice))
         for ii, i in enumerate(indice):
             col[i] = pad_value[ii]
-        df[idx] = col
+        df[str(idx)] = col
     
-    col = df[idx].to_list()
+    col = df[str(idx)].to_list()
     col = signal.filtfilt(b, a, col)
-    df[idx] = col
-
-import csv
-writer = csv.writer(open(args.out, 'a', newline='', encoding='utf8'))
-for i in df.values:
-    writer.writerow(list(i))
+    df[str(idx)] = col
+df.to_csv(args.out, index=False)

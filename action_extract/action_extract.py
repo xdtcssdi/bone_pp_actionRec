@@ -1,116 +1,79 @@
-import pandas as pd
-import csv
-import time
-import glob
+# 导入必要的软件包
+import cv2
 import os
-import numpy as np
-from pandas import DataFrame
-import matplotlib.pyplot as plt
+import csv
 
+# 视频文件输入初始化
+camera = cv2.VideoCapture(os.path.join(os.getcwd(), "video_data", "01A.mp4"))
 
-## 面积
-def judge_with_area(acc_array, threshold):
-    # 先根据对应的方法进行判断
-    # 是否满足阈值
-    # 返回 true or false
+# 初始化当前帧的前两帧
+lastFrame1 = None
+lastFrame2 = None
+start, end = 0, 0
+count = 0
+is_start = False
+larger_100000 = 0
+writer = csv.writer(open(os.path.join(os.getcwd(), "action_extract", "data.csv"), 'w', newline=''))
+# 遍历视频的每一帧
+while camera.isOpened():
 
-    area = np.trapz(acc_array, list(range(len(acc_array))), dx=0.001)
+    # 读取下一帧
+    (ret, frame) = camera.read()
+    # 如果不能抓取到一帧，说明我们到了视频的结尾
+    if not ret:
+        break
 
-    if area >= threshold:
-        return True
-    return False
+    # 调整该帧的大小
+    frame = cv2.resize(frame, (480, 640), interpolation=cv2.INTER_CUBIC)
 
-## 方差
-def judge_with_mv(acc_array, threshold):
-    var = np.var(acc_array)
-    print(var)
-    if var >= threshold:
-        return True
-    return False
+    # 如果第一二帧是None，对其进行初始化,计算第一二帧的不同
+    if lastFrame2 is None:
+        if lastFrame1 is None:
+            lastFrame1 = frame
+        else:
+            lastFrame2 = frame
+            global frameDelta1  # 全局变量
+            frameDelta1 = cv2.absdiff(lastFrame1, lastFrame2)  # 帧差一
+        continue
 
-# 阈值
-def judge_with_th(acc_array, threshold):
-    sum_ = sum(acc_array)
-    if sum_ >= threshold:
-        return True
-    return False
+    # 计算当前帧和前帧的不同,计算三帧差分
+    frameDelta2 = cv2.absdiff(lastFrame2, frame)  # 帧差二
+    thresh = cv2.bitwise_and(frameDelta1, frameDelta2)  # 图像与运算
+    
+    # 如果帧差小于100000
+    # 那么动作静止, end = 当前帧
+    # 否则在运动中，第一次检测在运动中时设置start = 当前帧
+    # 
+    if thresh.sum() > 100000:
+        larger_100000 += 1
+        if larger_100000 == 20:
+            larger_100000 = 0
+            # 动作开始
+            end = count
+            is_start = True
+    else:
+        if is_start:
+            # 检测到动作
+            # 进行处理
+            writer.writerow([start, end])
+        is_start = False
+        start = count
+        larger_100000 = 0
 
+    
+    # 当前帧设为下一帧的前帧,前帧设为下一帧的前前帧,帧差二设为帧差一
+    lastFrame1 = lastFrame2
+    lastFrame2 = frame.copy()
+    frameDelta1 = frameDelta2
 
-def save_sta(rows):
-    with open(os.path.join(os.getcwd(), 'stat.csv'), 'w') as f:
-        writer = csv.writer(f)
-        writer.writerows(rows)
+    # 显示当前帧
+    cv2.imshow("frame", frame)
 
+    # 如果q键被按下，跳出循环
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+    count += 1
 
-def identify():
-    windows_witd = 80
-    # 五个动作文件 
-    files_path = glob.glob(os.path.join(os.getcwd(), 'bone_padding', '*.csv'))
-    files_path.sort()
-    print(files_path)
-    ths = [0.006, 0.006, 0.006, 0.006, 0.006]  # th的阈值
-    cols = None
-
-    for file_, th in zip(reversed(files_path), ths):
-        action_file = file_.split(os.sep)[-1]
-
-        cnt = 0  # 提取数量计数器
-        dataMat = pd.read_csv(file_, names=['d' +str(i) for i in list(range(36))], low_memory=False)
-        d_len = len(dataMat)
-
-        start = 0
-        end = windows_witd
-        all_action_windows = DataFrame(columns=['start', ].extend(['d' +str(i) for i in list(range(36))]))
-
-        while True:
-            if end > d_len:
-                break
-            windows = dataMat[start:end]
-            acc_array = np.array(windows['d8'])
-            if judge_with_mv(acc_array, th):
-                # 从 acc_array 获取最大值的位置
-                max_idx = acc_array.argmax()
-                action_windows = windows[max_idx - 20:max_idx + 20]
-                
-                if len(action_windows) == 40:
-                    col = action_windows.values
-                    if type(cols) != np.ndarray:
-                        cols = col
-                    else:
-                        cols = np.concatenate((cols, col))
-                    #action_windows['start'] = [i for i in range(start + max_idx -20, start + max_idx +20)]
-                    all_action_windows = all_action_windows.append(action_windows)
-                    cnt += 1
-            start += windows_witd //2
-            end += windows_witd //2
-            
-        all_action_windows.to_csv(os.path.join(os.getcwd(),"action_extract", 'proed', action_file))
-        print(f"提取到{cnt}个动作")
-def draw():
-    files_path = glob.glob(os.path.join(dir, '*.csv'))
-    files_path.sort()
-
-    in_ = glob.glob(os.path.join(dir, 'proed', '*.csv'))
-    in_.sort()
-
-    files_path.extend(in_)
-
-    plt.rcParams['figure.figsize'] = (12.0, 6.0)
-
-    for idx, file_name in enumerate(files_path):
-        dataMat = pd.read_csv(file_name,
-                              names=['d' + str(i) for i in range(0, 44)],
-                              low_memory=False)[1:].drop(['d0'], axis=1).astype("float64")['d43']
-
-        plt.subplot(4, 5, idx + 1)
-        plt.plot(list(range(len(dataMat))), dataMat)
-        plt.title(file_name.split('\\')[-1])
-        plt.xticks([])
-        plt.yticks([])
-    plt.show()
-
-
-if __name__ == '__main__':
-    identify()
-    # draw()
-
+# 清理资源并关闭打开的窗口
+camera.release()
+cv2.destroyAllWindows()
