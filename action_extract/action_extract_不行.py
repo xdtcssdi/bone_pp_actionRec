@@ -8,18 +8,6 @@ from pandas import DataFrame
 import matplotlib.pyplot as plt
 
 
-## 面积
-def judge_with_area(acc_array, threshold):
-    # 先根据对应的方法进行判断
-    # 是否满足阈值
-    # 返回 true or false
-
-    area = np.trapz(acc_array, list(range(len(acc_array))), dx=0.001)
-
-    if area >= threshold:
-        return True
-    return False
-
 ## 方差
 def judge_with_mv(acc_array, threshold):
     var = np.var(acc_array)
@@ -27,19 +15,6 @@ def judge_with_mv(acc_array, threshold):
     if var >= threshold:
         return True
     return False
-
-# 阈值
-def judge_with_th(acc_array, threshold):
-    sum_ = sum(acc_array)
-    if sum_ >= threshold:
-        return True
-    return False
-
-
-def save_sta(rows):
-    with open(os.path.join(os.getcwd(), 'stat.csv'), 'w') as f:
-        writer = csv.writer(f)
-        writer.writerows(rows)
 
 
 def identify():

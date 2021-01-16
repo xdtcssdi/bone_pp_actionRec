@@ -33,13 +33,11 @@ model.cuda()
 model.float()
 model.eval()
 
-
 def img2bone(oriImg):
     oriImg = oriImg[np.newaxis, :]
     with torch.no_grad():
         paf, heatmap, imscale = get_outputs(
             oriImg, model, 'rtpose')
-
     human = paf_to_pose_cpp(heatmap[0], paf[0], cfg)
     return human
 
@@ -83,7 +81,6 @@ while camera.isOpened():
     if not ret:
         break
     
-    frame = np.rot90(np.rot90(np.rot90(frame,)))
     # 调整该帧的大小
     frame = cv2.resize(frame, (480, 640), interpolation=cv2.INTER_CUBIC)
     frames.append(frame)
@@ -106,7 +103,9 @@ while camera.isOpened():
     # 否则在运动中，第一次检测在运动中时设置start = 当前帧
     #
     c = thresh.sum()
-    print(c)
+    
+    # 150000 apple
+    # 300000 xiaomi
     if c > 150000:
         larger_100000 += 1
         if larger_100000 == 20:
@@ -117,8 +116,8 @@ while camera.isOpened():
     else:
         if is_start:
             # 检测到动作
-            # 进行处理
 
+            # 创建存储目录文件夹
             filename = cfg.FILE.split(os.sep)[-1].split('.')[0]
             if not os.path.exists('action_video'):
                 os.mkdir('action_video')
@@ -135,6 +134,7 @@ while camera.isOpened():
             if not os.path.exists(os.path.join('action_video', 'csv', filename)):
                 os.mkdir(os.path.join('action_video', 'csv', filename))
 
+            # 创建文件写入
             save_action_pose = cv2.VideoWriter(os.path.join('action_video', 'pose', filename, str(
                 action_count)+".avi"), fourcc, out_fps, (480, 640))
             save_action_raw = cv2.VideoWriter(os.path.join('action_video', 'raw', filename, str(
@@ -142,12 +142,14 @@ while camera.isOpened():
             writer = csv.writer(open(os.path.join(
                 'action_video', 'csv', filename, str(action_count)+".csv"), 'w', newline=''))
             writer.writerow(['frame'] + list(range(36)))
+            
             action_count += 1
             print(f"检测到第{action_count}个动作")
-
             # 一次处理一个帧
             for idx, frame in enumerate(frames[start: end+1]):
                 humans = img2bone(frame)
+                if len(humans) == 0:
+                    continue
                 data = []
                 for i in range(18):
                     if i in humans[0].body_parts:

@@ -52,11 +52,12 @@ model.eval()
 
 if __name__ == "__main__":
     
-    cap = cv2.VideoCapture(os.path.join(os.getcwd(), "video_data", "01A.mp4"))
+    cap = cv2.VideoCapture(cfg.FILE)
     
     while cap.isOpened():
         # Capture frame-by-frame
         ret, oriImg = cap.read()
+        oriImg = cv2.resize(oriImg, (480, 640), interpolation=cv2.INTER_CUBIC)
         oriImg = oriImg[np.newaxis, :]
         with torch.no_grad():
             paf, heatmap, imscale = get_outputs(

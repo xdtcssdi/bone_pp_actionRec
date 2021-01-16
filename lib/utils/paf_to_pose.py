@@ -372,7 +372,7 @@ def paf_to_pose(heatmaps, pafs, config):
 def paf_to_pose_cpp(heatmaps, pafs, config):
     humans = []
     joint_list_per_joint_type = NMS(heatmaps, upsampFactor=config.MODEL.DOWNSAMPLE, config=config)
-
+    
     joint_list = np.array(
         [tuple(peak) + (joint_type,) for joint_type, joint_peaks in enumerate(joint_list_per_joint_type) for peak in
          joint_peaks]).astype(np.float32)
