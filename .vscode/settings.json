@@ -1,3 +1,7 @@
 {
-    "python.pythonPath": "C:\\Users\\xx\\anaconda3\\envs\\torch\\python.exe"
+    "python.pythonPath": "C:\\Users\\xx\\anaconda3\\envs\\torch\\python.exe",
+    "python.autoComplete.extraPaths": [
+        　　　　"C:\\Users\\xx\\anaconda3\\envs\\torch\\Lib\\site-packages",
+        　　　　"C:\\Users\\xx\\anaconda3\\envs\\torch\\Scripts",
+        　　],
 }

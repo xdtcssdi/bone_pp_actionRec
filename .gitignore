@@ -11,6 +11,7 @@ notebooks/*.pkl
 /outputs
 network/weight
 action_video/*
+action_csv/*
 # ------------------------------
 
 # General

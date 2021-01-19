@@ -55,7 +55,7 @@ def img2bone2(oriImg):
 
 # 视频文件输入初始化
 camera = cv2.VideoCapture(cfg.FILE)
-out_fps = 20.0  # 输出文件的帧率
+out_fps = 10.0  # 输出文件的帧率
 fourcc = cv2.VideoWriter_fourcc('M', 'P', '4', '2')
 # 初始化当前帧的前两帧
 lastFrame1 = None
@@ -72,6 +72,29 @@ def local_threshold(image):
     #自适应阈值化能够根据图像不同区域亮度分布，改变阈值
     binary =  cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY, 25, 10)
     return binary
+
+# 创建存储目录文件夹
+if cfg.FILE != 0:
+    filename = cfg.FILE.split(os.sep)[-1].split('.')[0]
+else:
+    filename = "capture"
+if not os.path.exists('action_video'):
+    os.mkdir('action_video')
+if not os.path.exists(os.path.join('action_video', 'pose')):
+    os.mkdir(os.path.join('action_video', 'pose'))
+if not os.path.exists(os.path.join('action_video', 'raw')):
+    os.mkdir(os.path.join('action_video', 'raw'))
+if not os.path.exists(os.path.join('action_video', 'csv')):
+    os.mkdir(os.path.join('action_video', 'csv'))
+if not os.path.exists(os.path.join('action_video', 'pose', filename)):
+    os.mkdir(os.path.join('action_video', 'pose', filename))
+if not os.path.exists(os.path.join('action_video', 'raw', filename)):
+    os.mkdir(os.path.join('action_video', 'raw', filename))
+if not os.path.exists(os.path.join('action_video', 'csv', filename)):
+    os.mkdir(os.path.join('action_video', 'csv', filename))
+raw_video = []
+pose_video = []
+csv_data = []
 while camera.isOpened():
 
     # 读取下一帧
@@ -83,7 +106,24 @@ while camera.isOpened():
     
     # 调整该帧的大小
     frame = cv2.resize(frame, (480, 640), interpolation=cv2.INTER_CUBIC)
-    frames.append(frame)
+    raw_video.append(frame)
+    #frames.append(frame)
+
+    humans = img2bone(frame)
+    out = draw_humans(frame.copy(), humans)
+    pose_video.append(out)
+    if len(humans) == 0:
+        continue
+    data = []
+    for i in range(18):
+        if i in humans[0].body_parts:
+            item = humans[0].body_parts[i]
+            data.extend([item.x, item.y])
+        else:
+            data.extend([-1, -1])
+    csv_data.append(data)
+    
+
     # 如果第一二帧是None，对其进行初始化,计算第一二帧的不同
     if lastFrame2 is None:
         if lastFrame1 is None:
@@ -103,10 +143,11 @@ while camera.isOpened():
     # 否则在运动中，第一次检测在运动中时设置start = 当前帧
     #
     c = thresh.sum()
-    
+    #print(c)
     # 150000 apple
     # 300000 xiaomi
-    if c > 150000:
+    # 1300000 logi
+    if c > 1300000:
         larger_100000 += 1
         if larger_100000 == 20:
             larger_100000 = 0
@@ -116,23 +157,6 @@ while camera.isOpened():
     else:
         if is_start:
             # 检测到动作
-
-            # 创建存储目录文件夹
-            filename = cfg.FILE.split(os.sep)[-1].split('.')[0]
-            if not os.path.exists('action_video'):
-                os.mkdir('action_video')
-            if not os.path.exists(os.path.join('action_video', 'pose')):
-                os.mkdir(os.path.join('action_video', 'pose'))
-            if not os.path.exists(os.path.join('action_video', 'raw')):
-                os.mkdir(os.path.join('action_video', 'raw'))
-            if not os.path.exists(os.path.join('action_video', 'csv')):
-                os.mkdir(os.path.join('action_video', 'csv'))
-            if not os.path.exists(os.path.join('action_video', 'pose', filename)):
-                os.mkdir(os.path.join('action_video', 'pose', filename))
-            if not os.path.exists(os.path.join('action_video', 'raw', filename)):
-                os.mkdir(os.path.join('action_video', 'raw', filename))
-            if not os.path.exists(os.path.join('action_video', 'csv', filename)):
-                os.mkdir(os.path.join('action_video', 'csv', filename))
 
             # 创建文件写入
             save_action_pose = cv2.VideoWriter(os.path.join('action_video', 'pose', filename, str(
@@ -145,22 +169,28 @@ while camera.isOpened():
             
             action_count += 1
             print(f"检测到第{action_count}个动作")
+
+            for idx, (raw, pose, csv_) in enumerate(zip(raw_video[-20:], pose_video[-20:], csv_data[-20:])):
+                writer.writerow([start + idx, ] + csv_)
+                save_action_raw.write(raw)
+                save_action_pose.write(pose)
+
             # 一次处理一个帧
-            for idx, frame in enumerate(frames[start: end+1]):
-                humans = img2bone(frame)
-                if len(humans) == 0:
-                    continue
-                data = []
-                for i in range(18):
-                    if i in humans[0].body_parts:
-                        item = humans[0].body_parts[i]
-                        data.extend([item.x, item.y])
-                    else:
-                        data.extend([-1, -1])
-                writer.writerow([start + idx, ] + data)
-                save_action_raw.write(frame)
-                out = draw_humans(frame, humans)
-                save_action_pose.write(out)
+            # for idx, frame in enumerate(frames[start: end+1]):
+            #     humans = img2bone(frame)
+            #     if len(humans) == 0:
+            #         continue
+            #     data = []
+            #     for i in range(18):
+            #         if i in humans[0].body_parts:
+            #             item = humans[0].body_parts[i]
+            #             data.extend([item.x, item.y])
+            #         else:
+            #             data.extend([-1, -1])
+            #     writer.writerow([start + idx, ] + data)
+            #     save_action_raw.write(frame)
+            #     out = draw_humans(frame, humans)
+            #     save_action_pose.write(out)
 
             # 一次处理所有帧
             # humans = img2bone2(np.array(frames[start: end+1]))
@@ -188,7 +218,8 @@ while camera.isOpened():
     frameDelta1 = frameDelta2
 
     # 显示当前帧
-    cv2.imshow("frame", frame)
+    
+    cv2.imshow("frame", out)
 
     # 如果q键被按下，跳出循环
     if cv2.waitKey(1) & 0xFF == ord('q'):
