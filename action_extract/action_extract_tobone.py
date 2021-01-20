@@ -27,7 +27,7 @@ args = parser.parse_args()
 # update config file
 update_config(cfg, args)
 
-model = get_model('vgg19')
+model = get_model('mobilenet')
 model.load_state_dict(torch.load(args.weight))
 model.cuda()
 model.float()
@@ -64,7 +64,6 @@ start, end = 0, 0
 count = 0
 is_start = False
 larger_100000 = 0
-frames = []
 action_count = 0
 # 遍历视频的每一帧
 def local_threshold(image):
@@ -106,14 +105,13 @@ while camera.isOpened():
     
     # 调整该帧的大小
     frame = cv2.resize(frame, (480, 640), interpolation=cv2.INTER_CUBIC)
-    raw_video.append(frame)
-    #frames.append(frame)
-
     humans = img2bone(frame)
-    out = draw_humans(frame.copy(), humans)
-    pose_video.append(out)
     if len(humans) == 0:
         continue
+    
+    raw_video.append(frame)
+    out = draw_humans(frame.copy(), humans)
+    pose_video.append(out)
     data = []
     for i in range(18):
         if i in humans[0].body_parts:

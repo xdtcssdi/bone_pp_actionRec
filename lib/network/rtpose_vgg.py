@@ -55,7 +55,46 @@ def make_vgg19_block(block):
                 layers += [conv2d, nn.ReLU(inplace=True)]
     return nn.Sequential(*layers)
 
+def make_mobilenet_block(block):
+    """Builds a mobilenet block from a dictionary
+    Args:
+        block: a dictionary
+    """
 
+    def conv_bn(in_ch, out_ch, stride):
+        conv_basic = nn.Sequential(
+            nn.Conv2d(in_channels=in_ch, out_channels=out_ch, kernel_size=3, stride=stride, padding=1, bias=False),
+            nn.BatchNorm2d(out_ch),
+            nn.ReLU(inplace=True)
+        )
+        return conv_basic
+
+    def conv_dw(in_ch, out_ch, stride_dw):
+        conv_depthwise = nn.Sequential(
+            nn.Conv2d(in_channels=in_ch, out_channels=in_ch, kernel_size=3, stride=stride_dw, padding=1, groups=in_ch, bias=False),
+            nn.BatchNorm2d(in_ch),
+            nn.ReLU(inplace=True),
+
+            nn.Conv2d(in_channels=in_ch, out_channels=out_ch, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.BatchNorm2d(out_ch),
+            nn.ReLU(inplace=True),
+        )
+        return conv_depthwise
+
+    layers = []
+    for i in range(len(block)):
+        one_ = block[i]
+        for k, v in one_.items():
+            if 'conv_dw' in k :
+                layers += [conv_dw(v[0], v[1], v[2])]
+            elif 'conv_bn' in k:
+                layers += [conv_bn(v[0], v[1], v[2])]
+            else:
+                conv2d = nn.Conv2d(in_channels=v[0], out_channels=v[1],
+                                   kernel_size=v[2], stride=v[3],
+                                   padding=v[4])
+                layers += [conv2d, nn.ReLU(inplace=True)]
+    return nn.Sequential(*layers)
 
 def get_model(trunk='vgg19'):
     """Creates the whole CPM model
@@ -131,7 +170,8 @@ def get_model(trunk='vgg19'):
     if trunk == 'vgg19':
         print("Bulding VGG19")
         models['block0'] = make_vgg19_block(block0)
-
+    else:
+        models['block0'] = make_mobilenet_block(block0)
     for k, v in blocks.items():
         models[k] = make_stages(list(v))
 

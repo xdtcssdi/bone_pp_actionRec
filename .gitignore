@@ -12,6 +12,7 @@ notebooks/*.pkl
 network/weight
 action_video/*
 action_csv/*
+torch/*
 # ------------------------------
 
 # General
