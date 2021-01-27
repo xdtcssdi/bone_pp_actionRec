@@ -27,7 +27,7 @@ args = parser.parse_args()
 # update config file
 update_config(cfg, args)
 
-model = get_model('mobilenet')
+model = get_model('vgg19')
 model.load_state_dict(torch.load(args.weight))
 model.cuda()
 model.float()
@@ -62,6 +62,7 @@ lastFrame1 = None
 lastFrame2 = None
 start, end = 0, 0
 count = 0
+seq_count = 0
 is_start = False
 larger_100000 = 0
 action_count = 0
@@ -102,7 +103,7 @@ while camera.isOpened():
     # 如果不能抓取到一帧，说明我们到了视频的结尾
     if not ret:
         break
-    
+    frame =   np.rot90(np.rot90(np.rot90(frame)))
     # 调整该帧的大小
     frame = cv2.resize(frame, (480, 640), interpolation=cv2.INTER_CUBIC)
     humans = img2bone(frame)
@@ -113,6 +114,8 @@ while camera.isOpened():
     out = draw_humans(frame.copy(), humans)
     pose_video.append(out)
     data = []
+    #right_shoulder, right_wrist = humans[0].body_parts[2], humans[0].body_parts[4]
+    
     for i in range(18):
         if i in humans[0].body_parts:
             item = humans[0].body_parts[i]
@@ -145,15 +148,16 @@ while camera.isOpened():
     # 150000 apple
     # 300000 xiaomi
     # 1300000 logi
-    if c > 1300000:
-        larger_100000 += 1
-        if larger_100000 == 20:
-            larger_100000 = 0
-            # 动作开始
-            end = count
-            is_start = True
-    else:
-        if is_start:
+    if c > 150000 or is_start:
+        # 检测到动作
+        if not is_start:
+            start = count
+
+        is_start = True
+        seq_count+=1
+        if seq_count == 30:
+            is_start = False
+            seq_count = 0
             # 检测到动作
 
             # 创建文件写入
@@ -168,7 +172,7 @@ while camera.isOpened():
             action_count += 1
             print(f"检测到第{action_count}个动作")
 
-            for idx, (raw, pose, csv_) in enumerate(zip(raw_video[-20:], pose_video[-20:], csv_data[-20:])):
+            for idx, (raw, pose, csv_) in enumerate(zip(raw_video[-60:], pose_video[-60:], csv_data[-60:])):
                 writer.writerow([start + idx, ] + csv_)
                 save_action_raw.write(raw)
                 save_action_pose.write(pose)
@@ -206,9 +210,9 @@ while camera.isOpened():
             #     out = draw_humans(frame, human)
             #     save_action_pose.write(out)
 
-        is_start = False
-        start = count
-        larger_100000 = 0
+        # is_start = False
+        # start = count
+        # larger_100000 = 0
 
     # 当前帧设为下一帧的前帧,前帧设为下一帧的前前帧,帧差二设为帧差一
     lastFrame1 = lastFrame2

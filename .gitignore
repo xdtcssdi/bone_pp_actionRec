@@ -13,6 +13,7 @@ network/weight
 action_video/*
 action_csv/*
 torch/*
+*.npz
 # ------------------------------
 
 # General

@@ -2,7 +2,7 @@ import os
 import re
 import sys
 import csv
-import cv2, csv
+import cv2
 import math
 import time
 import scipy
@@ -44,20 +44,14 @@ args = parser.parse_args()
 # update config file
 update_config(cfg, args)   
 
-model = get_model('vgg19')     
-model.load_state_dict(torch.load(args.weight))
-model.cuda()
-model.float()
-model.eval()
-
 if __name__ == "__main__":
     
-    cap = cv2.VideoCapture(os.path.join(os.getcwd(), "video_data", "01A.mp4"))
+    cap = cv2.VideoCapture(os.path.join("D:\\code\\video_data\\2021-1-19lhd（03）", "03D.mp4"))
     
     count = 0
     frame_idx = 0
     #pose = list(csv.reader(open(os.path.join(os.getcwd(), "action_csv", "01A.csv"))))
-    pose = pd.read_csv(os.path.join(os.getcwd(), "bone_padding", "01A_pad.csv")).values
+    pose = pd.read_csv(os.path.join(os.getcwd(), "padding_csv", "03D.csv")).values
 
     print(pose.shape)
     # 输入的是带表头的数据
@@ -65,15 +59,17 @@ if __name__ == "__main__":
     while cap.isOpened():
         
         ret, oriImg = cap.read()
-        if type(oriImg) != np.ndarray:
-            continue
+        if not ret:
+            break
+        oriImg = np.rot90(np.rot90(np.rot90(oriImg)))
         oriImg = cv2.resize(oriImg, (480, 640))
+        
         oriImg = oriImg[np.newaxis, :]
         
         humans = [Human([])]
         row = pose[frame_idx]
-        if int(float(row[0])) != count + 1:
-            #print(int(row[-1]), count)
+        print(row)
+        if int(float(row[0])) != count:
             count+=1
             continue
         frame_idx += 1
@@ -87,12 +83,9 @@ if __name__ == "__main__":
     
         out = draw_humans(oriImg[0], humans)
 
-        # Display the resulting frame
         cv2.imshow('Video', out)
 
         if cv2.waitKey(10) & 0xFF == ord('q'):
             break
 
-    # When everything is done, release the capture
-    #video_capture.release()
     cv2.destroyAllWindows()

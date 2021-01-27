@@ -47,12 +47,11 @@ model.float()
 model.eval()
 count = 0
 
-writer = csv.writer(open("./action_csv/" + outname + '.csv', 'a', newline='' ,encoding='utf-8'))
-writer.writerow(['', ].extend([i for i in range(36)]))
 if __name__ == "__main__":
-    filepaths = os.path.join(os.getcwd(), "video_data", "*.mp4");
+    filepaths = os.path.join(cfg.FILE, "*.mp4")
+    print(filepaths)
     for filepath in glob(filepaths):
-
+        count = 0
         # call ffprobe command to get video's total frame number.
         # cal different programe by system platform.
         if sys.platform =='win32':
@@ -60,9 +59,13 @@ if __name__ == "__main__":
         else:
             program = 'ffprobe'
         total = os.popen(program + ' -v error -count_frames -select_streams v:0 -show_entries stream=nb_read_frames -of default=nokey=1:noprint_wrappers=1 ' + filepath)
-        total = int(total.read()) // cfg.BATCH_SIZE # calculate total progress
+        total = total.read()
+        #print(total)
+        total = int(total) // cfg.BATCH_SIZE # calculate total progress
         video_capture = cv2.VideoCapture(filepath) # open video file
         outname = filepath.split(os.sep)[-1].split('.')[0] # extract out filename
+        writer = csv.writer(open("./action_csv/" + outname + '.csv', 'w', newline='' ,encoding='utf-8'))
+        writer.writerow(['', ] + [i for i in range(36)])
 
         with tqdm(total=total) as pbar:
             while True:
@@ -71,8 +74,9 @@ if __name__ == "__main__":
                 for i in range(cfg.BATCH_SIZE):
                     # Capture frame-by-frame
                     ret, oriImg = video_capture.read()
-                    if type(oriImg) != numpy.ndarray:
+                    if not ret:
                         break
+                    oriImg = np.rot90(np.rot90(np.rot90(oriImg)))
                     oriImg = cv2.resize(oriImg, (480, 640))
                     batch_imgs.append(oriImg)
                 
@@ -91,20 +95,21 @@ if __name__ == "__main__":
                         humans = paf_to_pose_cpp(heatmap[i], paf[i], cfg)
 
                         # write to csv
-                            data = []
-                            for i in range(18):
-                                if i in humans[0].body_parts:
-                                    item = humans[0].body_parts[i]
-                                    data.extend([item.x, item.y])
-                                else:
-                                    data.extend([-1, -1])
+                        data = []
+                        for i in range(18):
+                            if i in humans[0].body_parts:
+                                item = humans[0].body_parts[i]
+                                data.extend([item.x, item.y])
+                            else:
+                                data.extend([-1, -1])
 
-                            writer.writerow([count, ].extend(data))
-
+                        writer.writerow([count, ] + data)
+                        count += 1
                         # if type(oriImg) != numpy.ndarray:
                         #     break
                         #out = draw_humans(batch_imgs[i], humans)
                 # update progress
+                
                 pbar.update(1)
     
         # When everything is done, release the capture
